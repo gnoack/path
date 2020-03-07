@@ -19,7 +19,16 @@ func squareDistancePointToLine(p, a, z image.Point) float64 {
 	return float64(pq.X*pq.X + pq.Y*pq.Y)
 }
 
+// SimplifyIntPoints simplifies a path of []image.Point, returning a
+// path of a subset of the given points. The parameter epsilon
+// specifies how far a point must be off from the already calculated
+// path to be still considered relevant.
+//
+// SimplifyIntPoints is a convenience method on top of Simplify.
 func SimplifyIntPoints(path []image.Point, epsilon float64) []image.Point {
+	// We use square distance as a metric and square epsilon too,
+	// which saves us from calculating the square root for the
+	// distance.
 	sqDist := func(p, a, z int) float64 {
 		return squareDistancePointToLine(path[p], path[a], path[z])
 	}
