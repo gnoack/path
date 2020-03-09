@@ -1,20 +1,19 @@
 package path
 
 import (
-	"image"
 	"testing"
 )
 
 func TestDistance(t *testing.T) {
 	for _, tc := range []struct {
-		p, a, z image.Point
+		p, a, z IntPt
 		want    float64
 	}{
-		{image.Pt(4, 1), image.Pt(0, 0), image.Pt(10, 0), 1},  // horizontal line
-		{image.Pt(1, 5), image.Pt(0, 0), image.Pt(0, 10), 1},  // vertical line
-		{image.Pt(1, 1), image.Pt(0, 0), image.Pt(10, 10), 0}, // on line
+		{IntPt{4, 1}, IntPt{0, 0}, IntPt{10, 0}, 1},  // horizontal line
+		{IntPt{1, 5}, IntPt{0, 0}, IntPt{0, 10}, 1},  // vertical line
+		{IntPt{1, 1}, IntPt{0, 0}, IntPt{10, 10}, 0}, // on line
 	} {
-		got := squareDistancePointToLine(tc.p, tc.a, tc.z)
+		got := squareDistanceIntPtToLine(tc.p, tc.a, tc.z)
 		if got != tc.want {
 			t.Errorf("Square distance from point %v to line %v-%v: got %v, want %v",
 				tc.p, tc.a, tc.z, got, tc.want)
@@ -22,7 +21,7 @@ func TestDistance(t *testing.T) {
 	}
 }
 
-func sliceEq(a, b []image.Point) bool {
+func sliceEq(a, b []int) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -36,49 +35,39 @@ func sliceEq(a, b []image.Point) bool {
 
 func TestSimplify(t *testing.T) {
 	for _, tc := range []struct {
-		path    []image.Point
+		path    []IntPt
 		epsilon float64
-		want    []image.Point
+		want    []int
 	}{
 		{
-			path: []image.Point{
-				image.Pt(0, 0),
-				image.Pt(1, 5),
-				image.Pt(0, 10),
+			path: []IntPt{
+				IntPt{0, 0},
+				IntPt{1, 5},
+				IntPt{0, 10},
 			},
 			epsilon: 1.1,
-			want: []image.Point{
-				image.Pt(0, 0),
-				image.Pt(0, 10),
-			},
+			want:    []int{0, 2},
 		},
 		{
-			path: []image.Point{
-				image.Pt(0, 0),
-				image.Pt(1, 5),
-				image.Pt(0, 10), image.Pt(5, 11), image.Pt(10, 10),
+			path: []IntPt{
+				IntPt{0, 0},
+				IntPt{1, 5},
+				IntPt{0, 10}, IntPt{5, 11}, IntPt{10, 10},
 			},
 			epsilon: 1.1,
-			want: []image.Point{
-				image.Pt(0, 0),
-				image.Pt(0, 10), image.Pt(10, 10),
-			},
+			want:    []int{0, 2, 4},
 		},
 		{
-			path: []image.Point{
-				image.Pt(0, 0),
-				image.Pt(1, 5),
-				image.Pt(0, 10), image.Pt(5, 11), image.Pt(10, 10),
+			path: []IntPt{
+				IntPt{0, 0},
+				IntPt{1, 5},
+				IntPt{0, 10}, IntPt{5, 11}, IntPt{10, 10},
 			},
 			epsilon: 1.0,
-			want: []image.Point{
-				image.Pt(0, 0),
-				image.Pt(1, 5),
-				image.Pt(0, 10), image.Pt(5, 11), image.Pt(10, 10),
-			},
+			want:    []int{0, 1, 2, 3, 4},
 		},
 	} {
-		got := SimplifyIntPoints(tc.path, tc.epsilon)
+		got := SimplifyIntPoints(func(i int) IntPt { return tc.path[i] }, len(tc.path), tc.epsilon)
 		if !sliceEq(got, tc.want) {
 			t.Errorf("Simplify %v with ε=%v: got %v, want %v",
 				tc.path, tc.epsilon, got, tc.want)
