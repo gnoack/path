@@ -1,25 +1,11 @@
-package path
+package path_test
 
 import (
+	"image"
 	"testing"
-)
 
-func TestDistance(t *testing.T) {
-	for _, tc := range []struct {
-		p, a, z IntPt
-		want    float64
-	}{
-		{IntPt{4, 1}, IntPt{0, 0}, IntPt{10, 0}, 1},  // horizontal line
-		{IntPt{1, 5}, IntPt{0, 0}, IntPt{0, 10}, 1},  // vertical line
-		{IntPt{1, 1}, IntPt{0, 0}, IntPt{10, 10}, 0}, // on line
-	} {
-		got := squareDistanceIntPtToLine(tc.p, tc.a, tc.z)
-		if got != tc.want {
-			t.Errorf("Square distance from point %v to line %v-%v: got %v, want %v",
-				tc.p, tc.a, tc.z, got, tc.want)
-		}
-	}
-}
+	"github.com/gnoack/path"
+)
 
 func sliceEq(a, b []int) bool {
 	if len(a) != len(b) {
@@ -35,39 +21,86 @@ func sliceEq(a, b []int) bool {
 
 func TestSimplify(t *testing.T) {
 	for _, tc := range []struct {
-		path    []IntPt
+		path    []image.Point
 		epsilon float64
 		want    []int
 	}{
 		{
-			path: []IntPt{
-				IntPt{0, 0},
-				IntPt{1, 5},
-				IntPt{0, 10},
+			path: []image.Point{
+				image.Pt(0, 0),
+				image.Pt(1, 5),
+				image.Pt(0, 10),
 			},
 			epsilon: 1.1,
 			want:    []int{0, 2},
 		},
 		{
-			path: []IntPt{
-				IntPt{0, 0},
-				IntPt{1, 5},
-				IntPt{0, 10}, IntPt{5, 11}, IntPt{10, 10},
+			path: []image.Point{
+				image.Pt(0, 0),
+				image.Pt(1, 5),
+				image.Pt(0, 10), image.Pt(5, 11), image.Pt(10, 10),
 			},
 			epsilon: 1.1,
 			want:    []int{0, 2, 4},
 		},
 		{
-			path: []IntPt{
-				IntPt{0, 0},
-				IntPt{1, 5},
-				IntPt{0, 10}, IntPt{5, 11}, IntPt{10, 10},
+			path: []image.Point{
+				image.Pt(0, 0),
+				image.Pt(1, 5),
+				image.Pt(0, 10), image.Pt(5, 11), image.Pt(10, 10),
 			},
 			epsilon: 1.0,
 			want:    []int{0, 1, 2, 3, 4},
 		},
 	} {
-		got := SimplifyIntPoints(func(i int) IntPt { return tc.path[i] }, len(tc.path), tc.epsilon)
+		p := path.OfIntPoints(func(i int) (x, y int) { return tc.path[i].X, tc.path[i].Y }, len(tc.path))
+		got := path.Simplify(p, tc.epsilon)
+		if !sliceEq(got, tc.want) {
+			t.Errorf("Simplify %v with ε=%v: got %v, want %v",
+				tc.path, tc.epsilon, got, tc.want)
+		}
+	}
+}
+
+func TestSimplifyFloatPoints(t *testing.T) {
+	type Float64Pt struct{ X, Y float64 }
+	pt := func(x, y float64) Float64Pt { return Float64Pt{x, y} }
+
+	for _, tc := range []struct {
+		path    []Float64Pt
+		epsilon float64
+		want    []int
+	}{
+		{
+			path: []Float64Pt{
+				pt(0, 0),
+				pt(1, 5),
+				pt(0, 10),
+			},
+			epsilon: 1.1,
+			want:    []int{0, 2},
+		},
+		{
+			path: []Float64Pt{
+				pt(0, 0),
+				pt(1, 5),
+				pt(0, 10), pt(5, 11), pt(10, 10),
+			},
+			epsilon: 1.1,
+			want:    []int{0, 2, 4},
+		},
+		{
+			path: []Float64Pt{
+				pt(0, 0),
+				pt(1, 5),
+				pt(0, 10), pt(5, 11), pt(10, 10),
+			},
+			epsilon: 1.0,
+			want:    []int{0, 1, 2, 3, 4},
+		},
+	} {
+		p := path.OfFloatPoints(func(i int) (x, y float64) { return tc.path[i].X, tc.path[i].Y }, len(tc.path))
+		got := path.Simplify(p, tc.epsilon)
 		if !sliceEq(got, tc.want) {
 			t.Errorf("Simplify %v with ε=%v: got %v, want %v",
 				tc.path, tc.epsilon, got, tc.want)
